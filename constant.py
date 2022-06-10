@@ -1,0 +1,6 @@
+PAD = "#PAD#"
+UNK = "#UNK#"
+START = "#START#"
+END = "#END#"
+
+NUM_VOCAB = 8845
