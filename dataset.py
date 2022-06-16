@@ -16,7 +16,7 @@ with open("vocab.pkl", "rb") as f:
 
 class ImageCaptioningDataset(Dataset):
 	
-	def __init__(self, image_zip_file, caption_zip_file, phase="train", caption_length=20):
+	def __init__(self, image_zip_file, caption_zip_file, phase="train", caption_length=22):
 		assert phase in ["train", "val"]
 		self.map = {"train": 0, "val": 1}
 		self.image_zip_file = image_zip_file
@@ -28,9 +28,13 @@ class ImageCaptioningDataset(Dataset):
 			captions = json.loads(f.read())
 		
 		zf = zipfile.ZipFile(image_zip_file)
-		zip_files : List[zipfile.ZipInfo] = [f for f in zf.filelist if f.filename.endswith(".jpg")]
+		zip_dict : Dict[str, zipfile.ZipInfo] = {} 
+		for f in zf.filelist:
+			if f.filename.endswith(".jpg"):
+				filename = f.filename.strip("train2014/")
+				zip_dict[filename] = f
 		image_anno_dict = {}
-		for anno in captions["annotations"][:100]:
+		for anno in captions["annotations"]:
 			image_id = anno["image_id"]
 			caption = re.sub(r'[^\w\s]', '', anno["caption"].lower().strip())
 			caption = self._convert_to_token(caption)
@@ -42,9 +46,8 @@ class ImageCaptioningDataset(Dataset):
 			image_id = img_dict["id"]
 			file_name = img_dict["file_name"]
 			if image_id not in image_anno_dict:
-				continue
 				raise ValueError("The caption label file is broken.")
-			image_anno_dict[image_id]["file_name"] = self._find_in_zip_files(file_name, zip_files)
+			image_anno_dict[image_id]["file_name"] = zip_dict[file_name]
 
 		self.images : List[zipfile.ZipFile] = []
 		self.captions : List[List[int]]= []
@@ -54,28 +57,19 @@ class ImageCaptioningDataset(Dataset):
 			self.captions.append(v["captions"])
 		assert len(self.images) == len(self.captions)
 
-	def _find_in_zip_files(self, file_name: str, zip_files: List[zipfile.ZipInfo]) -> zipfile.ZipInfo:
-		""" 
-		We don't extract the file from the zip in the file systems. By using the zipfile lib,
-		we have to interact with it.
-		"""
-		for zip_file in zip_files:
-			if(zip_file.filename.find(file_name) != -1):
-				return zip_file
-		raise ValueError("Cannot find {} in the zip".format(file_name))
-
 	def _convert_to_token(self, caption: str):
 		"""
 		Convert caption string to list of int tokens.
 		"""
 		words = caption.split(" ")
-		words = words[:self.caption_length]
+		words = words[:self.caption_length-2]
 		tokens = []
 		for word in words:
 			if word not in VOCAB:
 				tokens.append(VOCAB.index(constant.UNK))
 				continue
 			tokens.append(VOCAB.index(word))
+		tokens = [VOCAB.index(constant.START)] + tokens +  [VOCAB.index(constant.END)]
 		tokens = tokens + [VOCAB.index(constant.PAD)]*(self.caption_length-len(tokens))
 		return tokens
 

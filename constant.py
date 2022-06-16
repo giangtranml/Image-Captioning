@@ -3,4 +3,7 @@ UNK = "#UNK#"
 START = "#START#"
 END = "#END#"
 
-NUM_VOCAB = 8845
+PAD_IND = 0
+UNK_IND = 1
+START_IND = 2
+END_IND = 3
