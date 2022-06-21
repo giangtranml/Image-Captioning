@@ -31,7 +31,7 @@ class ImageCaptioningDataset(Dataset):
 		zip_dict : Dict[str, zipfile.ZipInfo] = {} 
 		for f in zf.filelist:
 			if f.filename.endswith(".jpg"):
-				filename = f.filename.strip("train2014/")
+				filename = f.filename.strip("{}2014/".format(phase))
 				zip_dict[filename] = f
 		image_anno_dict = {}
 		for anno in captions["annotations"]:

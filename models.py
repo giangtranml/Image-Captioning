@@ -37,6 +37,7 @@ class RNNDecoder(nn.Module):
             nn.ReLU(),
             nn.Linear(2048, num_vocab)
         )
+        self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, input, img_embeded, prediction=False):
         img_embeded = self.bottleneck(img_embeded)
@@ -46,11 +47,11 @@ class RNNDecoder(nn.Module):
             hidden = (img_embeded, img_embeded)
             out = input
             while out != constant.END_IND and len(output) <= config.SEQ_LENGTH:
-                print(out)
                 out = torch.tensor([[out]])
                 out = self.embedding(out)
                 out, hidden = self.rnn(out, hidden)
                 out = self.classifier(out)
+                out = self.softmax(out)
                 out = torch.argmax(out, dim=-1)
                 out = out.squeeze().item()
                 output.append(out)
